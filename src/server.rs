@@ -20,7 +20,7 @@ pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
 
     let mut server_vec: Vec<Server> = Vec::new();
     for server in server_data.as_array().unwrap() {
-        if server["clients"].as_i64().unwrap() == 0 {
+        if server["clients"].as_i64().unwrap() == 0 || server["version"].as_i64().unwrap() < 260 {
             continue;
         }
 
