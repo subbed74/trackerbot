@@ -62,7 +62,6 @@ pub struct Team {
     pub players: Vec<String>,
 }
 
-#[derive(Debug)]
 pub struct Server {
     pub description: String,
     pub host: String,
