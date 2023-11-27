@@ -102,6 +102,7 @@ pub async fn server(
             state: player["state"].as_i64().unwrap(),
         });
     }
+
     // Format server info
     let embed_desc = format!(
         "**Players:** {}/{} \n **Mastermode:** {} \n *{} {} {}* \n ",
@@ -131,7 +132,7 @@ pub async fn server(
                     team_players.push(player.name.clone());
                 }
 
-                if player.state == 5 {
+                if player.state == 5 && !spec_vec.contains(&player.name.clone()) {
                     spec_vec.push(player.name.clone());
                 }
             }
