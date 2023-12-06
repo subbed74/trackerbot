@@ -43,20 +43,26 @@ pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
     // Format data into list
     let mut server_list: String = String::from("__**Active Servers:**__\n");
     for (i, server) in server_vec.iter().enumerate() {
-        server_list = format!("{}- **[{}]** [{}](https://sauertracker.net/server/{}/{})\n - {}/{} | {} {} - {} | {} | `/connect {} {}`\n",
+        let inc_port = if server.port != 28785 {
+            format!(" port: {}", server.port)
+        } else {
+            String::new()
+        };
+
+        server_list = format!("{}- **[{}]** [{}](https://sauertracker.net/server/{}/{}) - Info: `/server ip:{}{}`\n - {}/{} | {} {} - {} | {}\n",
             server_list,
             i+1,
             server.description,
             server.host,
             server.port,
+            server.host,
+            inc_port,
             server.clients,
             server.max_clients,
             server.gamemode,
             server.mapname,
             server.time_left_string,
             server.mastermode,
-            server.host,
-            server.port
         );
     }
 
@@ -106,7 +112,7 @@ pub async fn server(
     // Format server info
     let embed_desc = format!(
         "**Players:** {}/{} \n **Mastermode:** {} \n *{} {} {}* \n ",
-        server_data["players"].as_array().unwrap().len(),
+        server_data["clients"].as_i64().unwrap(),
         server_data["maxClients"].as_i64().unwrap(),
         server_data["masterMode"].as_str().unwrap(),
         server_data["mapName"].as_str().unwrap(),
