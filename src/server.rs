@@ -3,7 +3,10 @@ use crate::{Context, Error};
 use trackerbot::{grab_api_data, resolve_ip, ActivePlayer, Server, Team, TEAMMODES};
 
 /// Grab active servers.
-#[poise::command(slash_command)]
+#[poise::command(
+    slash_command,
+    user_cooldown = 10
+)]
 pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
 
@@ -73,7 +76,10 @@ pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 /// Grab information on a server.
-#[poise::command(slash_command)]
+#[poise::command(
+    slash_command,
+    user_cooldown = 10
+)]
 pub async fn server(
     ctx: Context<'_>,
     #[description = "Server Addr"] ip: String,

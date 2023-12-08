@@ -2,7 +2,10 @@ use crate::{Context, Error};
 use trackerbot::{escape_markdown, grab_api_data};
 
 /// Shows a list of similar player names up to 200 names.
-#[poise::command(slash_command)]
+#[poise::command(
+    slash_command,
+    user_cooldown = 10
+)]
 pub async fn findplayer(
     ctx: Context<'_>,
     #[description = "Username to search for"] username: String,
@@ -63,7 +66,10 @@ pub async fn findplayer(
 }
 
 /// Lookup information on a specific player.
-#[poise::command(slash_command)]
+#[poise::command(
+    slash_command,
+    user_cooldown = 10
+)]
 pub async fn player(
     ctx: Context<'_>,
     #[description = "Username of player"] username: String,
