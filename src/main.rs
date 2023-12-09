@@ -3,8 +3,11 @@ use poise::serenity_prelude as serenity;
 use reqwest::Client;
 use tokio::time::Duration;
 
+pub mod data;
+
 mod player;
 mod server;
+mod clan;
 
 pub struct Data {
     // User data, which is stored and accessible in all command invocations
@@ -58,8 +61,11 @@ async fn main() {
             commands: vec![
                 server::server(),
                 server::listservers(),
+
                 player::findplayer(),
                 player::player(),
+
+                //clan::clan(),
             ],
             event_handler: |ctx, event, _, data| Box::pin(listener(ctx, event, data)),
             ..Default::default()

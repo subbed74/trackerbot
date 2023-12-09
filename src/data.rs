@@ -3,6 +3,7 @@ use poise::serenity_prelude as serenity;
 use poise::Context;
 use serde_json::Value;
 
+// Data structures
 pub const MODENAMES: [&str; 23] = [
     "ffa",
     "coop_edit",
@@ -74,6 +75,7 @@ pub struct Server {
     pub time_left_string: String,
 }
 
+// API handling
 pub async fn resolve_ip(initial: String) -> Option<String> {
     match lookup_host(&initial) {
         Ok(ok) => Some(ok[0].to_string()),
@@ -112,7 +114,17 @@ pub async fn grab_api_data(client: &reqwest::Client, api_url: String) -> Option<
     }
 }
 
-// Modified paginate code
+// Don't format for Discord markdown
+pub fn escape_markdown(mut text: String) -> String {
+    text = text.replace('*', "\\*");
+    text = text.replace('_', "\\_");
+    text = text.replace('|', "\\|");
+    text = text.replace('#', "\\#");
+
+    text
+}
+
+// Modified paginate code for the user list
 pub async fn paginate<U, E>(
     ctx: Context<'_, U, E>,
     title: String,
@@ -190,13 +202,4 @@ pub async fn paginate<U, E>(
     }
 
     Ok(())
-}
-
-pub fn escape_markdown(mut text: String) -> String {
-    text = text.replace('*', "\\*");
-    text = text.replace('_', "\\_");
-    text = text.replace('|', "\\|");
-    text = text.replace('#', "\\#");
-
-    text
 }

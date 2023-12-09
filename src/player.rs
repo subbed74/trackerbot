@@ -1,5 +1,5 @@
 use crate::{Context, Error};
-use trackerbot::{escape_markdown, grab_api_data};
+use crate::data::{escape_markdown, grab_api_data, paginate};
 
 /// Shows a list of similar player names up to 200 names.
 #[poise::command(
@@ -52,7 +52,7 @@ pub async fn findplayer(
     }
     let page_ref: Vec<&str> = page_contents.iter().map(|x| x.as_str()).collect();
 
-    trackerbot::paginate(
+    paginate(
         ctx,
         format!("Names similar to {username}"),
         &page_ref,
