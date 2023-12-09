@@ -1,10 +1,12 @@
 use crate::{Context, Error};
 use crate::data::{escape_markdown, grab_api_data, paginate};
+use crate::admin::info_role;
 
 /// Shows a list of similar player names up to 200 names.
 #[poise::command(
     slash_command,
-    user_cooldown = 10
+    user_cooldown = 10,
+    check = "info_role"
 )]
 pub async fn findplayer(
     ctx: Context<'_>,
@@ -68,7 +70,8 @@ pub async fn findplayer(
 /// Lookup information on a specific player.
 #[poise::command(
     slash_command,
-    user_cooldown = 10
+    user_cooldown = 10,
+    check = "info_role"
 )]
 pub async fn player(
     ctx: Context<'_>,
