@@ -1,11 +1,13 @@
 //use poise::serenity_prelude as serenity;
 use crate::{Context, Error};
 use crate::data::{grab_api_data, resolve_ip, ActivePlayer, Server, Team, TEAMMODES};
+use crate::admin::info_role;
 
 /// Grab active servers.
 #[poise::command(
     slash_command,
-    user_cooldown = 10
+    user_cooldown = 10,
+    check = "info_role"
 )]
 pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
@@ -78,7 +80,8 @@ pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
 /// Grab information on a server.
 #[poise::command(
     slash_command,
-    user_cooldown = 10
+    user_cooldown = 10,
+    check = "info_role"
 )]
 pub async fn server(
     ctx: Context<'_>,
