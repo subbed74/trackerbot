@@ -1,6 +1,6 @@
 //use poise::serenity_prelude as serenity;
 use crate::{Context, Error};
-use trackerbot::{grab_api_data, resolve_ip, ActivePlayer, Server, Team, TEAMMODES};
+use crate::data::{grab_api_data, resolve_ip, ActivePlayer, Server, Team, TEAMMODES};
 
 /// Grab active servers.
 #[poise::command(
