@@ -6,7 +6,7 @@ use tokio::time::Duration;
 mod data;
 mod player;
 mod server;
-//mod clan;
+mod clan;
 mod admin;
 
 pub struct Data {
@@ -83,7 +83,7 @@ async fn main() {
                 player::findplayer(),
                 player::player(),
 
-                //clan::clan(),
+                clan::claninfo(),
             ],
             event_handler: |ctx, event, _, data| Box::pin(listener(ctx, event, data)),
             ..Default::default()
