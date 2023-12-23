@@ -2,6 +2,7 @@ use dns_lookup::lookup_host;
 use poise::serenity_prelude as serenity;
 use poise::Context;
 use serde_json::Value;
+use serde::Deserialize;
 
 // Data structures
 pub const MODENAMES: [&str; 23] = [
@@ -51,10 +52,19 @@ pub const TEAMMODES: [&str; 18] = [
     "effic_collect",
 ];
 
-pub struct ActivePlayer {
+#[derive(Default, Deserialize, Debug)]
+pub struct Player {
     pub name: String,
+    pub frags: i64,
     pub team: String,
+    pub flags: i64,
+    pub deaths: i64,
+    pub kpd: f64,
+    pub acc: i64,
+    pub tks: i64,
     pub state: i64,
+    pub country: Option<String>,
+    pub ping: i64,
 }
 
 pub struct Team {
