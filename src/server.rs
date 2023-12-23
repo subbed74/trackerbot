@@ -1,6 +1,6 @@
 //use poise::serenity_prelude as serenity;
 use crate::{Context, Error};
-use crate::data::{grab_api_data, resolve_ip, ActivePlayer, Server, Team, TEAMMODES};
+use crate::data::{grab_api_data, resolve_ip, Player, Server, Team, TEAMMODES};
 use crate::admin::info_role;
 
 /// Grab active servers.
@@ -87,6 +87,8 @@ pub async fn server(
     ctx: Context<'_>,
     #[description = "Server Addr"] ip: String,
     #[description = "Server Port"] port: Option<u16>,
+    #[description = "Player in game"]
+    #[max_length = 15] username: Option<String>,
 ) -> Result<(), Error> {
     ctx.defer().await?;
 
@@ -109,18 +111,9 @@ pub async fn server(
         None => return Err("Unable to retrieve data!".into()),
     };
 
-    let mut player_vec: Vec<ActivePlayer> = Vec::new();
-    for player in server_data["players"].as_array().unwrap() {
-        player_vec.push(ActivePlayer {
-            name: player["name"].as_str().unwrap().to_string(),
-            team: player["team"].as_str().unwrap().to_string(),
-            state: player["state"].as_i64().unwrap(),
-        });
-    }
-
     // Format server info
-    let embed_desc = format!(
-        "**Players:** {}/{} \n **Mastermode:** {} \n *{} {} {}* \n ",
+    let mut embed_desc = format!(
+        "**Players:** {}/{}\n**Mastermode:** {}\n*{} {} {}*\n\n",
         server_data["clients"].as_i64().unwrap(),
         server_data["maxClients"].as_i64().unwrap(),
         server_data["masterMode"].as_str().unwrap(),
@@ -133,87 +126,134 @@ pub async fn server(
         }
     );
 
-    // Format teams and a display
-    let mut team_vec: Vec<Team> = Vec::new();
-    let mut spec_vec: Vec<String> = Vec::new();
-    let mut active_vec: Vec<String> = Vec::new();
+    let mut player_vec: Vec<Player> = Vec::new();
+    for player in server_data["players"].as_array().unwrap() {
+        player_vec.push(serde_json::from_value(player.clone()).unwrap());
+    }
 
-    if TEAMMODES.contains(&server_data["gameMode"].as_str().unwrap()) {
-        for team in server_data["teams"].as_array().unwrap() {
-            let mut team_players: Vec<String> = Vec::new();
+    // If username not specified, show full server otherwise user stats
+    if username.is_none() {
+        // Format teams and a display
+        let mut team_vec: Vec<Team> = Vec::new();
+        let mut spec_vec: Vec<String> = Vec::new();
+        let mut active_vec: Vec<String> = Vec::new();
 
-            for player in &player_vec {
-                if player.team == *team["name"].as_str().unwrap() && player.state != 5 {
-                    team_players.push(player.name.clone());
+        if TEAMMODES.contains(&server_data["gameMode"].as_str().unwrap()) {
+            for team in server_data["teams"].as_array().unwrap() {
+                let mut team_players: Vec<String> = Vec::new();
+
+                for player in &player_vec {
+                    if player.team == *team["name"].as_str().unwrap() && player.state != 5 {
+                        team_players.push(player.name.clone());
+                    }
+
+                    if player.state == 5 && !spec_vec.contains(&player.name.clone()) {
+                        spec_vec.push(player.name.clone());
+                    }
                 }
 
-                if player.state == 5 && !spec_vec.contains(&player.name.clone()) {
+                team_vec.push(Team {
+                    name: team["name"].as_str().unwrap().to_string(),
+                    score: team["score"].as_i64().unwrap(),
+                    players: team_players,
+                });
+            }
+        } else {
+            for player in &player_vec {
+                if player.state != 5 {
+                    active_vec.push(player.name.clone());
+                } else {
                     spec_vec.push(player.name.clone());
                 }
             }
-
-            team_vec.push(Team {
-                name: team["name"].as_str().unwrap().to_string(),
-                score: team["score"].as_i64().unwrap(),
-                players: team_players,
-            });
         }
-    } else {
-        for player in &player_vec {
-            if player.state != 5 {
-                active_vec.push(player.name.clone());
-            } else {
-                spec_vec.push(player.name.clone());
-            }
-        }
-    }
 
-    ctx.send(|m| {
-        m.embed(|e| {
-            e.colour(0xFF0000);
-            e.title(server_data["description"].as_str().unwrap());
-            e.url(format!("https://sauertracker.net/server/{}/{}", ip, port));
-            e.description(embed_desc);
+        ctx.send(|m| {
+            m.embed(|e| {
+                e.colour(0xFF0000);
+                e.title(server_data["description"].as_str().unwrap());
+                e.url(format!("https://sauertracker.net/server/{}/{}", ip, port));
+                e.description(embed_desc);
 
-            if TEAMMODES.contains(&server_data["gameMode"].as_str().unwrap()) {
-                for team in team_vec {
-                    let mut team_players_display = String::new();
-                    for player in team.players {
-                        team_players_display = format!("{}{}\n", team_players_display, player);
+                if TEAMMODES.contains(&server_data["gameMode"].as_str().unwrap()) {
+                    for team in team_vec {
+                        let mut team_players_display = String::new();
+                        for player in team.players {
+                            team_players_display = format!("{}{}\n", team_players_display, player);
+                        }
+
+                        e.field(
+                            format!("{}: [{}]", team.name, team.score),
+                            team_players_display,
+                            true,
+                        );
+                    }
+                } else {
+                    let mut players_display = String::new();
+                    for player in active_vec {
+                        players_display = format!("{}{}\n", players_display, player);
                     }
 
-                    e.field(
-                        format!("{}: [{}]", team.name, team.score),
-                        team_players_display,
-                        true,
-                    );
-                }
-            } else {
-                let mut players_display = String::new();
-                for player in active_vec {
-                    players_display = format!("{}{}\n", players_display, player);
+                    e.field("Players:", players_display, false);
                 }
 
-                e.field("Players:", players_display, false);
-            }
-
-            if !spec_vec.is_empty() {
-                let mut spec_display = String::new();
-                for player in &spec_vec {
-                    if player == &spec_vec[spec_vec.len() - 1] {
-                        spec_display = format!("{}{}", spec_display, player);
-                    } else {
-                        spec_display = format!("{}{}, ", spec_display, player);
+                if !spec_vec.is_empty() {
+                    let mut spec_display = String::new();
+                    for player in &spec_vec {
+                        if player == &spec_vec[spec_vec.len() - 1] {
+                            spec_display = format!("{}{}", spec_display, player);
+                        } else {
+                            spec_display = format!("{}{}, ", spec_display, player);
+                        }
                     }
+
+                    e.field("Spectators:", spec_display, false);
                 }
 
-                e.field("Spectators:", spec_display, false);
-            }
-
-            e.footer(|f| f.text(format!("/connect {ip} {port}")))
+                e.footer(|f| f.text(format!("/connect {ip} {port}")))
+            })
         })
-    })
-    .await?;
+        .await?;
+    } else {
+        // Check if player is in server
+        let mut player_stats: Option<Player> = None;
+        for player in player_vec {
+            if player.name == username.clone().unwrap() {
+                player_stats = Some(player);
+                break;
+            }
+        }
+
+        if player_stats.is_none() {
+            return Err(format!("{}, that player was not found in the server!", ctx.author()).into());
+        }
+
+        // Build and send embed if found
+        embed_desc = format!("{embed_desc}__**Player:**__\n{}",
+            player_stats.as_ref().unwrap().name
+        );
+
+
+
+        ctx.send(|m| {
+            m.embed(|e| {
+                e.colour(0xFF0000);
+                e.title(server_data["description"].as_str().unwrap());
+                e.url(format!("https://sauertracker.net/server/{}/{}", ip, port));
+                e.description(embed_desc);
+
+                e.field("Frags:", player_stats.as_ref().unwrap().frags, true);
+                e.field("Deaths:", player_stats.as_ref().unwrap().deaths, true);
+                e.field("KpD:", player_stats.as_ref().unwrap().kpd, true);
+
+                e.field("Accuracy:", player_stats.as_ref().unwrap().acc, true);
+                e.field("Flags:", player_stats.as_ref().unwrap().flags, true);
+                e.field("Country:", player_stats.as_ref().unwrap().country.as_ref().unwrap_or(&String::from("Unknown")), true);
+                e.footer(|f| f.text(format!("/connect {ip} {port}")))
+            })
+        })
+        .await?;
+    }
 
     Ok(())
 }
