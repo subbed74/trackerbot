@@ -18,11 +18,6 @@ pub async fn claninfo(
     let api_link = format!("https://sauertracker.net/api/clan/{clantag}");
     let page_url = format!("https://sauertracker.net/clan/{clantag}");
 
-    /*let data = match grab_api_data(&ctx.data().client, api_link).await {
-        Some(data) => data,
-        None => return Err("Unable to retrieve data!".into()),
-    };*/
-
     let data = match grab_api_data(&ctx.data().client, api_link, &page_url).await
     {
         Ok(data) => data,

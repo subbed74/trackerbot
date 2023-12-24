@@ -28,11 +28,6 @@ pub async fn findplayer(
     let api_link = format!("http://sauertracker.net/api/v2/players/find?name={username}&country={country}");
     let page_url = format!("https://sauertracker.net/players/find?name={username}&country={country}");
 
-    /*let data = match grab_api_data(&ctx.data().client, api_link).await {
-        Some(data) => data,
-        None => return Err("Unable to retrieve data!".into()),
-    };*/
-
     let data = match grab_api_data(&ctx.data().client, api_link, &page_url).await {
         Ok(data) => data,
         Err(err) => return Err(err),
@@ -88,11 +83,6 @@ pub async fn player(
     // Grab and validate information
     let api_link = format!("https://sauertracker.net/api/player/{username}");
     let page_url = format!("https://sauertracker.net/player/{username}");
-
-    /*let data = match grab_api_data(&ctx.data().client, api_link).await {
-        Some(data) => data,
-        None => return Err("Unable to retrieve data!".into()),
-    };*/
 
     let data = match grab_api_data(&ctx.data().client, api_link, &page_url).await {
         Ok(data) => data,

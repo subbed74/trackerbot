@@ -100,19 +100,6 @@ pub async fn resolve_ip(initial: String) -> Option<String> {
 pub async fn grab_api_data(client: &reqwest::Client, api_url: String, backup_url: &String) -> Result<Value, Error> {
     let init_request = client.get(&api_url).send().await;
 
-    /*let init_request = match init_request {
-        Ok(ok) => Some(ok),
-        Err(err) => {
-            if err.is_timeout() {
-                println!("Timeout");
-            } else {
-                println!("{}", err);
-            }
-
-            return None;
-        }
-    };*/
-
     let init_request = match init_request {
         Ok(ok) => ok,
         Err(err) => {
