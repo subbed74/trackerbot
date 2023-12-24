@@ -10,10 +10,11 @@ use crate::admin::info_role;
 )]
 pub async fn findplayer(
     ctx: Context<'_>,
-    #[description = "Username to search for"] username: String,
+    #[description = "Username to search for"]
+    #[max_length = 15] username: String,
+
     #[description = "Country code for user. Use __ for unknown country."]
-    #[max_length = 2]
-    country: Option<String>,
+    #[max_length = 2] country: Option<String>,
 ) -> Result<(), Error> {
     ctx.defer().await?;
 
@@ -24,13 +25,19 @@ pub async fn findplayer(
     };
 
     // Grab Information
-    let api_link =
-        format!("http://sauertracker.net/api/v2/players/find?name={username}&country={country}");
+    let api_link = format!("http://sauertracker.net/api/v2/players/find?name={username}&country={country}");
+    let page_url = format!("https://sauertracker.net/players/find?name={username}&country={country}");
 
-    let data = match grab_api_data(&ctx.data().client, api_link).await {
+    /*let data = match grab_api_data(&ctx.data().client, api_link).await {
         Some(data) => data,
         None => return Err("Unable to retrieve data!".into()),
+    };*/
+
+    let data = match grab_api_data(&ctx.data().client, api_link, &page_url).await {
+        Ok(data) => data,
+        Err(err) => return Err(err),
     };
+
     let data = data.as_array().unwrap();
 
     // Format information
@@ -58,9 +65,7 @@ pub async fn findplayer(
         ctx,
         format!("Names similar to {username}"),
         &page_ref,
-        Some(format!(
-            "https://sauertracker.net/players/find?name={username}&country={country}"
-        )),
+        Some(page_url),
     )
     .await?;
 
@@ -75,16 +80,23 @@ pub async fn findplayer(
 )]
 pub async fn player(
     ctx: Context<'_>,
-    #[description = "Username of player"] username: String,
+    #[description = "Username of player"]
+    #[max_length = 15] username: String,
 ) -> Result<(), Error> {
     ctx.defer().await?;
 
     // Grab and validate information
     let api_link = format!("https://sauertracker.net/api/player/{username}");
+    let page_url = format!("https://sauertracker.net/player/{username}");
 
-    let data = match grab_api_data(&ctx.data().client, api_link).await {
+    /*let data = match grab_api_data(&ctx.data().client, api_link).await {
         Some(data) => data,
         None => return Err("Unable to retrieve data!".into()),
+    };*/
+
+    let data = match grab_api_data(&ctx.data().client, api_link, &page_url).await {
+        Ok(data) => data,
+        Err(err) => return Err(err),
     };
 
     let clan = match data["player"]["clan"].as_str() {
@@ -147,7 +159,7 @@ pub async fn player(
         m.embed(|e| {
             e.colour(0xFF0000);
             e.title(format!("{} stats", escape_markdown(username.clone())));
-            e.url(format!("https://sauertracker.net/player/{}", username));
+            e.url(page_url);
             e.description(desc);
 
             e.field("Duels:", duel_stats, false);

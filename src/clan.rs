@@ -16,10 +16,17 @@ pub async fn claninfo(
 
     // Grab and validate information
     let api_link = format!("https://sauertracker.net/api/clan/{clantag}");
+    let page_url = format!("https://sauertracker.net/clan/{clantag}");
 
-    let data = match grab_api_data(&ctx.data().client, api_link).await {
+    /*let data = match grab_api_data(&ctx.data().client, api_link).await {
         Some(data) => data,
         None => return Err("Unable to retrieve data!".into()),
+    };*/
+
+    let data = match grab_api_data(&ctx.data().client, api_link, &page_url).await
+    {
+        Ok(data) => data,
+        Err(err) => return Err(err),
     };
 
     // Organize display information
@@ -83,7 +90,7 @@ pub async fn claninfo(
     ctx.send(|m| {
         m.embed(|e| {
             e.title(title);
-            e.url(format!("https://sauertracker.net/clan/{clantag}"));
+            e.url(page_url);
             e.description(desc)
         })
     }).await?;
