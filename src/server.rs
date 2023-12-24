@@ -13,21 +13,10 @@ use serde_json::Value;
 pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
 
-    // Grab data
-    /*let server_data = match grab_api_data(
-        &ctx.data().client,
-        String::from("https://sauertracker.net/api/v2/servers"),
-    )
-    .await
-    {
-        Some(data) => data,
-        None => return Err("Unable to retrieve data!".into()),
-    };*/
     let api_link = String::from("https://sauertracker.net/api/v2/servers");
     let page_url = String::from("https://sauertracker.net");
 
-    let server_data = match grab_api_data(&ctx.data().client, api_link, &page_url).await
-    {
+    let server_data = match grab_api_data(&ctx.data().client, api_link, &page_url).await {
         Ok(data) => data,
         Err(err) => return Err(err),
     };
