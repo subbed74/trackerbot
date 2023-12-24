@@ -8,7 +8,8 @@ use serde_json::Value;
 #[poise::command(
     slash_command,
     user_cooldown = 10,
-    check = "info_role"
+    check = "info_role",
+    guild_only
 )]
 pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
@@ -79,7 +80,8 @@ pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
 #[poise::command(
     slash_command,
     user_cooldown = 10,
-    check = "info_role"
+    check = "info_role",
+    guild_only
 )]
 pub async fn server(
     ctx: Context<'_>,
