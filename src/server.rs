@@ -2,6 +2,7 @@
 use crate::{Context, Error};
 use crate::data::{grab_api_data, resolve_ip, Player, Server, Team, TEAMMODES};
 use crate::admin::info_role;
+use serde_json::Value;
 
 /// Grab active servers.
 #[poise::command(
@@ -13,7 +14,7 @@ pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
 
     // Grab data
-    let server_data = match grab_api_data(
+    /*let server_data = match grab_api_data(
         &ctx.data().client,
         String::from("https://sauertracker.net/api/v2/servers"),
     )
@@ -21,6 +22,14 @@ pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
     {
         Some(data) => data,
         None => return Err("Unable to retrieve data!".into()),
+    };*/
+    let api_link = String::from("https://sauertracker.net/api/v2/servers");
+    let page_url = String::from("https://sauertracker.net");
+
+    let server_data = match grab_api_data(&ctx.data().client, api_link, &page_url).await
+    {
+        Ok(data) => data,
+        Err(err) => return Err(err),
     };
 
     let mut server_vec: Vec<Server> = Vec::new();
@@ -86,7 +95,7 @@ pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
 pub async fn server(
     ctx: Context<'_>,
     #[description = "Server Addr"] ip: String,
-    #[description = "Server Port"] port: Option<u16>,
+    #[description = "Server Port"] port: Option<i64>,
     #[description = "Player in game"]
     #[max_length = 15] username: Option<String>,
 ) -> Result<(), Error> {
@@ -98,17 +107,29 @@ pub async fn server(
         None => return Err("Unable to resolve address!".into()),
     };
 
-    let port = port.unwrap_or(28785_u16);
+    let port = port.unwrap_or(28785_i64);
+
+    // Check if the server exists
+    let api_link = String::from("https://sauertracker.net/api/v2/servers");
+    let page_url = String::from("https://sauertracker.net");
+
+    let all_server_data = match grab_api_data(&ctx.data().client, api_link, &page_url).await {
+        Ok(data) => data,
+        Err(_) => return Err("There was an error pulling information for servers!".into()),
+    };
+
+    let all_server_data = all_server_data.as_array().unwrap();
+    if !server_exists(all_server_data, &ip, port) {
+        return Err("The server you have specified does not exist!".into());
+    }
 
     // Begin data handling
-    let server_data = match grab_api_data(
-        &ctx.data().client,
-        format!("http://sauertracker.net/api/v2/server/{}/{}", ip, port),
-    )
-    .await
-    {
-        Some(data) => data,
-        None => return Err("Unable to retrieve data!".into()),
+    let api_url = format!("http://sauertracker.net/api/v2/server/{ip}/{port}");
+    let page_url = format!("https://sauertracker.net/server/{ip}/{port}");
+
+    let server_data = match grab_api_data(&ctx.data().client, api_url, &page_url).await {
+        Ok(data) => data,
+        Err(err) => return Err(err),
     };
 
     // Format server info
@@ -172,7 +193,7 @@ pub async fn server(
             m.embed(|e| {
                 e.colour(0xFF0000);
                 e.title(server_data["description"].as_str().unwrap());
-                e.url(format!("https://sauertracker.net/server/{}/{}", ip, port));
+                e.url(page_url);
                 e.description(embed_desc);
 
                 if TEAMMODES.contains(&server_data["gameMode"].as_str().unwrap()) {
@@ -239,7 +260,7 @@ pub async fn server(
             m.embed(|e| {
                 e.colour(0xFF0000);
                 e.title(server_data["description"].as_str().unwrap());
-                e.url(format!("https://sauertracker.net/server/{}/{}", ip, port));
+                e.url(page_url);
                 e.description(embed_desc);
 
                 e.field("Frags:", player_stats.as_ref().unwrap().frags, true);
@@ -256,4 +277,14 @@ pub async fn server(
     }
 
     Ok(())
+}
+
+fn server_exists(server_array: &Vec<Value>, host: &String, port: i64) -> bool {
+    for server in server_array {
+        if server["host"].as_str().unwrap() == host.as_str() && server["port"].as_i64().unwrap() == port {
+            return true;
+        }
+    }
+
+    false
 }

@@ -3,6 +3,7 @@ use poise::serenity_prelude as serenity;
 use poise::Context;
 use serde_json::Value;
 use serde::Deserialize;
+use crate::Error;
 
 // Data structures
 pub const MODENAMES: [&str; 23] = [
@@ -96,10 +97,10 @@ pub async fn resolve_ip(initial: String) -> Option<String> {
     }
 }
 
-pub async fn grab_api_data(client: &reqwest::Client, api_url: String) -> Option<Value> {
-    let init_request = client.get(api_url).send().await;
+pub async fn grab_api_data(client: &reqwest::Client, api_url: String, backup_url: &String) -> Result<Value, Error> {
+    let init_request = client.get(&api_url).send().await;
 
-    let init_request = match init_request {
+    /*let init_request = match init_request {
         Ok(ok) => Some(ok),
         Err(err) => {
             if err.is_timeout() {
@@ -110,16 +111,30 @@ pub async fn grab_api_data(client: &reqwest::Client, api_url: String) -> Option<
 
             return None;
         }
+    };*/
+
+    let init_request = match init_request {
+        Ok(ok) => ok,
+        Err(err) => {
+            if err.is_timeout() {
+                println!("[ ERROR ] Bot timed out using api_url: {}", &api_url);
+                return Err(format!("The request has timed out! Try visiting: {backup_url}").into());
+            } else {
+                println!("{err}");
+            }
+
+            return Err("There was an unexpected error with the request! Try visiting: {backup_url}".into());
+        }
     };
 
-    let res = init_request.unwrap().json::<serde_json::Value>().await;
+    let res = init_request.json::<serde_json::Value>().await;
 
     match res {
-        Ok(ok) => Some(ok),
+        Ok(ok) => Ok(ok),
         Err(e) => {
-            println!("JSON ERROR: {}", e);
+            println!("[ ERROR ] An error occured grabbing JSON data: {e}");
 
-            None
+            Err("There was an unexpected error!".into())
         }
     }
 }
@@ -134,7 +149,7 @@ pub fn escape_markdown(mut text: String) -> String {
     text
 }
 
-// Modified paginate code for the user list
+// Modified sample paginate code for the user list
 pub async fn paginate<U, E>(
     ctx: Context<'_, U, E>,
     title: String,
