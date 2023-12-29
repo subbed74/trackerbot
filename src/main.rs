@@ -8,6 +8,7 @@ mod player;
 mod server;
 mod clan;
 mod admin;
+mod bookmark;
 
 pub struct Data {
     // User data, which is stored and accessible in all command invocations
@@ -84,6 +85,11 @@ async fn main() {
                 player::player(),
 
                 clan::claninfo(),
+
+                bookmark::bk(),
+                bookmark::bkadd(),
+                bookmark::bkdelete(),
+                bookmark::bklist()
             ],
             event_handler: |ctx, event, _, data| Box::pin(listener(ctx, event, data)),
             ..Default::default()
