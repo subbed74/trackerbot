@@ -48,7 +48,7 @@ pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
     let mut server_list: String = String::from("__**Active Servers:**__\n");
     for (i, server) in server_vec.iter().enumerate() {
         let inc_port = if server.port != 28785 {
-            format!(" port: {}", server.port)
+            format!(" port:{}", server.port)
         } else {
             String::new()
         };
