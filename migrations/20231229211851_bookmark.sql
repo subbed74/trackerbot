@@ -4,5 +4,5 @@ CREATE TABLE server_bookmarks (
     guild_id INTEGER NOT NULL,
     bookmark_name TEXT NOT NULL,
     host TEXT NOT NULL,
-    port INTEGER NOT NULL DEFAULT 28785
+    port INTEGER NOT NULL
 )

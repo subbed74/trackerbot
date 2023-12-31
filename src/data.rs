@@ -86,6 +86,15 @@ pub struct Server {
     pub time_left_string: String,
 }
 
+// DB specific structs
+pub struct ServerBookmark {
+    pub id: i64,
+    pub guild_id: i64,
+    pub bookmark_name: String,
+    pub host: String,
+    pub port: i64,
+}
+
 // API handling
 pub async fn resolve_ip(initial: String) -> Option<String> {
     match lookup_host(&initial) {
