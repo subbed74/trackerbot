@@ -68,7 +68,6 @@ async fn main() {
     sqlx::migrate!("./migrations").run(&database).await.unwrap();
 
     let client = Client::builder()
-        .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko)")
         .timeout(Duration::from_secs(180))
         .build()
         .unwrap();
