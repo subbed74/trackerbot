@@ -1,8 +1,10 @@
+#![allow(non_snake_case)] // Just here to align with the JSON when needed for my sanity
+
 use dns_lookup::lookup_host;
 use poise::serenity_prelude as serenity;
 use poise::Context;
 use serde_json::Value;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use crate::Error;
 
 // Data structures
@@ -53,8 +55,57 @@ pub const TEAMMODES: [&str; 18] = [
     "effic_collect",
 ];
 
-#[derive(Default, Deserialize, Debug)]
-pub struct Player {
+#[derive(Clone, Default, Deserialize, Debug)]
+pub struct BasicServer {  // Used for the server list
+    pub descriptionStyled: String,
+    pub description: String,
+    pub country: String,
+    pub countryName: String,
+    pub host: String,
+    pub port: i64,
+    pub version: i64,
+    pub clients: i64,
+    pub maxClients: i64,
+    pub gameMode: String,
+    pub mapName: String,
+    pub masterMode: String,
+    pub isFull: bool,
+    pub timeLeft: i64,
+    pub timeLeftString: String,
+    pub zombie: bool,
+    pub players: Vec<String>
+}
+
+#[derive(Default, Serialize, Deserialize, Debug)]
+pub struct DetailedServer { // Used for more detailed information
+    pub descriptionStyled: String,
+    pub description: String,
+    pub country: String,
+    pub countryName: String,
+    pub host: String,
+    pub port: i64,
+    pub version: i64,
+    pub info: Info,
+    pub clients: i64,
+    pub maxClients: i64,
+    pub gameMode: String,
+    pub mapName: String,
+    pub masterMode: String,
+    pub isFull: bool,
+    pub timeLeft: i64,
+    pub timeLeftString: String,
+    pub zombie: bool,
+    pub players: Vec<ServerPlayer>,
+    pub teams: Vec<Team>,
+    pub gameType: String,
+
+    // Non-JSON provided data
+    pub all_active_players: Option<Vec<String>>,
+    pub spectators: Option<Vec<String>>
+}
+
+#[derive(Default, Serialize, Deserialize, Debug)]
+pub struct ServerPlayer {
     pub name: String,
     pub frags: i64,
     pub team: String,
@@ -68,22 +119,20 @@ pub struct Player {
     pub ping: i64,
 }
 
+#[derive(Default, Serialize, Deserialize, Debug)]
 pub struct Team {
     pub name: String,
     pub score: i64,
-    pub players: Vec<String>,
+
+    // Non-JSON provided data
+    pub players: Option<Vec<String>>
 }
 
-pub struct Server {
-    pub description: String,
-    pub host: String,
-    pub port: i64,
-    pub clients: i64,
-    pub max_clients: i64,
-    pub gamemode: String,
-    pub mapname: String,
-    pub mastermode: String,
-    pub time_left_string: String,
+#[derive(Default, Serialize, Deserialize, Debug)]
+pub struct Info {
+    pub website: String,
+    pub demourl: String,
+    pub banned: String,
 }
 
 // DB specific structs
