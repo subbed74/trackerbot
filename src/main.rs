@@ -12,7 +12,7 @@ mod bookmark;
 
 pub struct Data {
     // User data, which is stored and accessible in all command invocations
-    database: sqlx::SqlitePool,
+    database: sqlx::MySqlPool,
     client: reqwest::Client,
 }
 
@@ -30,7 +30,7 @@ async fn listener(
             println!("SauerTracker Bot connected!");
         },
         poise::Event::GuildCreate { guild, .. } => {
-            let guild_id = *guild.id.as_u64() as i64;
+            let guild_id = *guild.id.as_u64();
             let count = sqlx::query!("SELECT COUNT(id) AS count FROM guild_settings WHERE guild_id = ?", guild_id)
                 .fetch_one(&data.database)
                 .await
@@ -57,14 +57,15 @@ async fn main() {
 
     // Connect to sqlite DB
     let database_url = std::env::var("DATABASE_URL").expect("missing DATABASE_URL");
-    let database = sqlx::sqlite::SqlitePoolOptions::new()
+    /*let database = sqlx::sqlite::SqlitePoolOptions::new()
         .max_connections(5)
         .connect_with(
             database_url
                 .parse::<sqlx::sqlite::SqliteConnectOptions>().unwrap()
                 .create_if_missing(true),
         )
-        .await.unwrap();
+        .await.unwrap();*/
+    let database = sqlx::mysql::MySqlPool::connect(&database_url).await.unwrap();
     sqlx::migrate!("./migrations").run(&database).await.unwrap();
 
     let client = Client::builder()

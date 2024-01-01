@@ -76,12 +76,12 @@ pub async fn listservers(ctx: Context<'_>) -> Result<(), Error> {
 pub async fn server(
     ctx: Context<'_>,
     #[description = "Server Addr"] host: String,
-    #[description = "Server Port"] port: Option<i64>,
+    #[description = "Server Port"] port: Option<u32>,
     #[description = "Player in game"]
     #[max_length = 15] username: Option<String>,
 ) -> Result<(), Error> {
     ctx.defer().await?;
-    let port = port.unwrap_or(28785_i64);
+    let port = port.unwrap_or(28785_u32);
     let page_url = format!("https://sauertracker.net/server/{host}/{port}");
 
     let server_data = match get_server_info(&ctx.data().client, host.clone(), port.clone()).await {
@@ -196,7 +196,7 @@ pub async fn server(
 }
 
 // Get server info container
-pub async fn get_server_info(client: &reqwest::Client, host: String, port: i64) -> Result<DetailedServer, Error> {
+pub async fn get_server_info(client: &reqwest::Client, host: String, port: u32) -> Result<DetailedServer, Error> {
     // Validate host
     let host = match resolve_ip(host.clone()).await {
         Some(ip) => ip,
@@ -258,9 +258,9 @@ pub async fn get_server_info(client: &reqwest::Client, host: String, port: i64) 
     Ok(server_data)
 }
 
-pub fn server_exists(server_array: &Vec<Value>, host: &String, port: i64) -> bool {
+pub fn server_exists(server_array: &Vec<Value>, host: &String, port: u32) -> bool {
     for server in server_array {
-        if server["host"].as_str().unwrap() == host.as_str() && server["port"].as_i64().unwrap() == port {
+        if server["host"].as_str().unwrap() == host.as_str() && server["port"].as_i64().unwrap() as u32 == port {
             return true;
         }
     }

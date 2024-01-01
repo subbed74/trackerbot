@@ -114,9 +114,9 @@ pub async fn bkadd(
     ctx: Context<'_>,
     #[description = "Name for the bookmark"] bookmark: String,
     #[description = "Server address/ip"] host: String,
-    #[description = "Server port (Default: 28785)"] port: Option<i64>
+    #[description = "Server port (Default: 28785)"] port: Option<u32>
 ) -> Result<(), Error> {
-    let guild_id = *ctx.guild_id().unwrap().as_u64() as i64;
+    let guild_id = *ctx.guild_id().unwrap().as_u64();
 
     let port = match port {
         Some(port) => port,
@@ -164,7 +164,7 @@ pub async fn bkdelete(
     ctx: Context<'_>,
     #[description = "Name of the server bookmark"] bookmark: String
 ) -> Result<(), Error> {
-    let guild_id = *ctx.guild_id().unwrap().as_u64() as i64;
+    let guild_id = *ctx.guild_id().unwrap().as_u64();
 
     // Verify in DB
     let count = sqlx::query!("SELECT COUNT(bookmark_name) AS count FROM server_bookmarks WHERE guild_id = ? AND bookmark_name = ?", guild_id, bookmark)
@@ -194,7 +194,7 @@ pub async fn bkdelete(
     check = "info_role"
 )]
 pub async fn bklist(ctx: Context<'_>) -> Result<(), Error> {
-    let guild_id = *ctx.guild_id().unwrap().as_u64() as i64;
+    let guild_id = *ctx.guild_id().unwrap().as_u64();
 
     // Query DB and verify
     let server_bookmarks: Vec<ServerBookmark> = sqlx::query_as!(ServerBookmark, "SELECT * FROM server_bookmarks WHERE guild_id = ?", guild_id)
