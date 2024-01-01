@@ -209,7 +209,7 @@ pub async fn bklist(ctx: Context<'_>) -> Result<(), Error> {
     // Build, send message
     let mut bk_list = String::new();
     for (_, bookmark) in server_bookmarks.iter().enumerate() {
-        bk_list = format!("{bk_list}\n- {0} - `/server ip:{1} port:{2}`",
+        bk_list = format!("{bk_list}\n- {0} - `/server host:{1} port:{2}`",
             bookmark.bookmark_name,
             bookmark.host,
             bookmark.port);
