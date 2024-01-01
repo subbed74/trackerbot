@@ -1,6 +1,6 @@
 //use poise::serenity_prelude as serenity;
 use crate::{Context, Error};
-use crate::data::{grab_api_data, resolve_ip, ServerPlayer, DetailedServer, BasicServer, Team, TEAMMODES};
+use crate::data::{grab_api_data, resolve_ip, ServerPlayer, DetailedServer, BasicServer, TEAMMODES};
 use crate::admin::info_role;
 use serde_json::Value;
 
@@ -230,7 +230,7 @@ pub async fn get_server_info(client: &reqwest::Client, host: String, port: u32) 
 
     // Populate spectator/team player vectors
     if TEAMMODES.contains(&server_data.gameMode.as_str()) {
-        for mut team in &mut server_data.teams {
+        for team in &mut server_data.teams {
             let mut team_players: Vec<String> = Vec::new();
 
             for player in &server_data.players {

@@ -2,7 +2,6 @@ use crate::{Context, Error};
 use crate::data::{TEAMMODES, ServerBookmark};
 use crate::admin::info_role;
 use crate::server::get_server_info;
-use serde_json::Value;
 
 /// Grab server information from a bookmark
 #[poise::command(
@@ -40,7 +39,7 @@ pub async fn bk(
     };
 
     // Format server info
-    let mut embed_desc = format!(
+    let embed_desc = format!(
         "**Players:** {}/{}\n**Mastermode:** {}\n*{} {} {}*\n\n",
         server_data.clients,
         server_data.maxClients,
