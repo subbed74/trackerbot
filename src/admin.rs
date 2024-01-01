@@ -12,10 +12,10 @@ pub async fn setrole(
     ctx: Context<'_>,
     #[description = "Chosen role required to run info commands. Leave empty for no role."] req_role: Option<serenity::Role>
 ) -> Result<(), Error> {
-    let guild_id = *ctx.guild_id().unwrap().as_u64() as i64;
+    let guild_id = *ctx.guild_id().unwrap().as_u64();
 
-    let role_id: Option<i64> = match &req_role {
-        Some(role) => Some(*role.id.as_u64() as i64),
+    let role_id: Option<u64> = match &req_role {
+        Some(role) => Some(*role.id.as_u64()),
         None => None
     };
 
@@ -37,7 +37,7 @@ pub async fn setrole(
 // Command check for required roles
 pub async fn info_role(ctx: Context<'_>) -> Result<bool, Error> {
     // Pull data and validate
-    let guild_id = *ctx.guild_id().unwrap().as_u64() as i64;
+    let guild_id = *ctx.guild_id().unwrap().as_u64();
     let role_id = sqlx::query!("SELECT infocmds_required_role AS id FROM guild_settings WHERE guild_id = ?", guild_id)
         .fetch_one(&ctx.data().database)
         .await

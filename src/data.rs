@@ -137,11 +137,11 @@ pub struct Info {
 
 // DB specific structs
 pub struct ServerBookmark {
-    pub id: i64,
-    pub guild_id: i64,
+    pub id: i32,
+    pub guild_id: u64,
     pub bookmark_name: String,
     pub host: String,
-    pub port: i64,
+    pub port: u32,
 }
 
 // API handling
