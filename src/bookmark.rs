@@ -14,6 +14,7 @@ pub async fn bk(
     ctx: Context<'_>,
     #[description = "Name of the server bookmark"] bookmark: String
 ) -> Result<(), Error> {
+    ctx.defer().await?;
     let guild_id = *ctx.guild_id().unwrap().as_u64() as i64;
 
     // Verify then grab information in DB
