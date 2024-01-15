@@ -1,6 +1,7 @@
 # TrackerBot
 
 A WIP Discord bot to show Cube2: Sauerbraten statistics using Sauertracker's API. All commands have a *user* cooldown of 10 seconds. There is a 3 minute timeout present on requests to Sauertracker currently if Sauertracker is taking longer to respond.
+You can invite the bot to your Discord server with this link: [TrackerBot Invite Link](https://discord.com/api/oauth2/authorize?client_id=1167124821377826846&permissions=274877926400&scope=bot)
 
 ## Commands
 - () = Required parameter
@@ -29,4 +30,3 @@ A WIP Discord bot to show Cube2: Sauerbraten statistics using Sauertracker's API
 ## Links
 - [Cube2: Sauerbraten Main Site](http://sauerbraten.org)
 - [Sauertracker](https://sauertracker.net)
-- [TrackerBot Invite Link](https://discord.com/api/oauth2/authorize?client_id=1167124821377826846&permissions=274877926400&scope=bot)
