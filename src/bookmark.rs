@@ -191,7 +191,8 @@ pub async fn bkdelete(
 /// List all bookmarks for the guild
 #[poise::command(
     slash_command,
-    check = "info_role"
+    check = "info_role",
+    guild_only
 )]
 pub async fn bklist(ctx: Context<'_>) -> Result<(), Error> {
     let guild_id = *ctx.guild_id().unwrap().as_u64();

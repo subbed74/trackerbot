@@ -6,8 +6,7 @@ use crate::admin::info_role;
 #[poise::command(
     slash_command,
     user_cooldown = 10,
-    check = "info_role",
-    guild_only
+    check = "info_role"
 )]
 pub async fn findplayer(
     ctx: Context<'_>,
@@ -72,8 +71,7 @@ pub async fn findplayer(
 #[poise::command(
     slash_command,
     user_cooldown = 10,
-    check = "info_role",
-    guild_only
+    check = "info_role"
 )]
 pub async fn player(
     ctx: Context<'_>,

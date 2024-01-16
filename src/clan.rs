@@ -6,8 +6,7 @@ use crate::admin::info_role;
 #[poise::command(
     slash_command,
     user_cooldown = 10,
-    check = "info_role",
-    guild_only
+    check = "info_role"
 )]
 pub async fn claninfo(
     ctx: Context<'_>,

@@ -37,6 +37,10 @@ pub async fn setrole(
 // Command check for required roles
 pub async fn info_role(ctx: Context<'_>) -> Result<bool, Error> {
     // Pull data and validate
+    if ctx.partial_guild().await.is_none() {
+        return Ok(true);
+    }
+
     let guild_id = *ctx.guild_id().unwrap().as_u64();
     let role_id = sqlx::query!("SELECT infocmds_required_role AS id FROM guild_settings WHERE guild_id = ?", guild_id)
         .fetch_one(&ctx.data().database)
