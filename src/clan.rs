@@ -24,6 +24,12 @@ pub async fn claninfo(
         Err(err) => return Err(err),
     };
 
+    if data["error"].as_str().is_some() {
+        if data["error"].as_str().unwrap() == "Clan not found." {
+            return Err("No clan found with that clantag!".into());
+        }
+    }
+
     // Organize display information
     let title = format!("{} - {}",
         data["info"]["tag"].as_str().unwrap(),
