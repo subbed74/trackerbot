@@ -7,11 +7,11 @@ edition = "2021"
 
 [dependencies]
 dotenv = "0.15.0"
-poise = "0.5.7"
-reqwest = "0.11.22"
-tokio = { version = "1.29.1", features = ["full"] }
+poise = "0.6.1"
+reqwest = { version = "0.11.23", features = ["json"] }
+tokio = { version = "1.35.1", features = ["full"] }
 serde_json = "1"
-chrono = "0.4.31"
+chrono = "0.4"
 dns-lookup = "2.0.4"
-sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "mysql"] }
-serde = "1.0.193"
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "mysql"] }
+serde = "1"

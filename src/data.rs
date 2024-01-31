@@ -201,37 +201,30 @@ pub async fn paginate<U, E>(
     pages: &[&str],
     embed_url: Option<String>,
 ) -> Result<(), serenity::Error> {
-    // Weird stuff
-    let original_embed_url = embed_url.clone();
-
     // Define some unique identifiers for the navigation buttons
     let ctx_id = ctx.id();
     let prev_button_id = format!("{}prev", ctx_id);
     let next_button_id = format!("{}next", ctx_id);
 
     // Send the embed with the first page as content
+    let reply = {
+        let components = serenity::CreateActionRow::Buttons(vec![
+            serenity::CreateButton::new(&prev_button_id).emoji('◀'),
+            serenity::CreateButton::new(&next_button_id).emoji('▶'),
+        ]);
+
+        poise::CreateReply::default()
+            .embed(serenity::CreateEmbed::default().description(pages[0]).title(&title).url(embed_url.clone().unwrap_or_else(String::new)))
+            .components(vec![components])
+    };
+
+    ctx.send(reply).await?;
+
+    // Send the embed with the first page as content
     let mut current_page = 0;
-    ctx.send(|b| {
-        b.embed(|b| {
-            b.description(pages[current_page]);
-
-            if original_embed_url.is_some() {
-                b.url(original_embed_url.unwrap());
-            }
-
-            b.title(&title)
-        })
-        .components(|b| {
-            b.create_action_row(|b| {
-                b.create_button(|b| b.custom_id(&prev_button_id).emoji('◀'))
-                    .create_button(|b| b.custom_id(&next_button_id).emoji('▶'))
-            })
-        })
-    })
-    .await?;
 
     // Loop through incoming interactions with the navigation buttons
-    while let Some(press) = serenity::CollectComponentInteraction::new(ctx)
+    while let Some(press) = serenity::collector::ComponentInteractionCollector::new(ctx)
         // We defined our button IDs to start with `ctx_id`. If they don't, some other command's
         // button was pressed
         .filter(move |press| press.data.custom_id.starts_with(&ctx_id.to_string()))
@@ -253,7 +246,7 @@ pub async fn paginate<U, E>(
         }
 
         // Update the message with the new page contents
-        press
+        /*press
             .create_interaction_response(ctx, |b| {
                 b.kind(serenity::InteractionResponseType::UpdateMessage)
                     .interaction_response_data(|b| {
@@ -268,6 +261,16 @@ pub async fn paginate<U, E>(
                         })
                     })
             })
+            .await?;*/
+
+        press
+            .create_response(
+                ctx.serenity_context(),
+                serenity::CreateInteractionResponse::UpdateMessage(
+                    serenity::CreateInteractionResponseMessage::new()
+                        .embed(serenity::CreateEmbed::new().description(pages[current_page]).title(&title).url(embed_url.clone().unwrap_or_else(String::new))),
+                ),
+            )
             .await?;
     }
 

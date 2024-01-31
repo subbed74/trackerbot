@@ -3,6 +3,7 @@ use crate::{Context, Error};
 use crate::data::{grab_api_data, resolve_ip, ServerPlayer, DetailedServer, BasicServer, TEAMMODES};
 use crate::admin::info_role;
 use serde_json::Value;
+use poise::serenity_prelude as serenity;
 
 /// Grab active servers.
 #[poise::command(
@@ -104,52 +105,51 @@ pub async fn server(
 
     // If username not specified, show full server otherwise user stats
     if username.is_none() {
-        ctx.send(|m| {
-            m.embed(|e| {
-                e.colour(0xFF0000);
-                e.title(server_data.description);
-                e.url(page_url);
-                e.description(embed_desc);
+        let server_footer = serenity::CreateEmbedFooter::new(format!("/connect {host} {port}"));
 
-                if TEAMMODES.contains(&server_data.gameMode.as_str()) {
-                    for team in &server_data.teams {
-                        let mut team_players_display = String::new();
-                        for player in team.players.clone().unwrap() {
-                            team_players_display = format!("{}{}\n", team_players_display, player);
-                        }
+        let mut server_embed = serenity::CreateEmbed::new()
+            .colour(0xFF0000)
+            .title(server_data.description)
+            .url(page_url)
+            .description(embed_desc)
+            .footer(server_footer);
 
-                        e.field(
-                            format!("{}: [{}]", team.name, team.score),
-                            team_players_display,
-                            true,
-                        );
-                    }
+        if TEAMMODES.contains(&server_data.gameMode.as_str()) {
+            for team in &server_data.teams {
+                let mut team_players_display = String::new();
+                for player in team.players.clone().unwrap() {
+                    team_players_display = format!("{}{}\n", team_players_display, player);
+                }
+
+                server_embed = server_embed.field(
+                    format!("{}: [{}]", team.name, team.score),
+                    team_players_display,
+                    true,
+                );
+            }
+        } else {
+            let mut players_display = String::new();
+            for player in &server_data.all_active_players.unwrap() {
+                players_display = format!("{}{}\n", players_display, player);
+            }
+
+            server_embed = server_embed.field("Players:", players_display, false);
+        }
+
+        if !server_data.spectators.clone().unwrap().is_empty() {
+            let mut spec_display = String::new();
+            for (i, player) in server_data.spectators.clone().unwrap().iter().enumerate() {
+                if i == server_data.spectators.clone().unwrap().len() - 1 {
+                    spec_display = format!("{}{}", spec_display, player);
                 } else {
-                    let mut players_display = String::new();
-                    for player in &server_data.all_active_players.unwrap() {
-                        players_display = format!("{}{}\n", players_display, player);
-                    }
-
-                    e.field("Players:", players_display, false);
+                    spec_display = format!("{}{}, ", spec_display, player);
                 }
+            }
 
-                if !server_data.spectators.clone().unwrap().is_empty() {
-                    let mut spec_display = String::new();
-                    for (i, player) in server_data.spectators.clone().unwrap().iter().enumerate() {
-                        if i == server_data.spectators.clone().unwrap().len() - 1 {
-                            spec_display = format!("{}{}", spec_display, player);
-                        } else {
-                            spec_display = format!("{}{}, ", spec_display, player);
-                        }
-                    }
+            server_embed = server_embed.field("Spectators:", spec_display, false);
+        }
 
-                    e.field("Spectators:", spec_display, false);
-                }
-
-                e.footer(|f| f.text(format!("/connect {host} {port}")))
-            })
-        })
-        .await?;
+        ctx.send(poise::CreateReply::default().embed(server_embed)).await?;
     } else {
         // Check if player is in server
         let mut player_stats: Option<ServerPlayer> = None;
@@ -169,25 +169,23 @@ pub async fn server(
             player_stats.as_ref().unwrap().name
         );
 
+        let server_footer = serenity::CreateEmbedFooter::new(format!("/connect {host} {port}"));
 
+        let server_embed = serenity::CreateEmbed::new()
+            .colour(0xFF0000)
+            .title(server_data.description)
+            .url(page_url)
+            .description(embed_desc)
 
-        ctx.send(|m| {
-            m.embed(|e| {
-                e.colour(0xFF0000);
-                e.title(server_data.description);
-                e.url(page_url);
-                e.description(embed_desc);
+            .field("Frags:", format!("{}", player_stats.as_ref().unwrap().frags), true)
+            .field("Deaths:", format!("{}", player_stats.as_ref().unwrap().deaths), true)
+            .field("KpD:", format!("{}", player_stats.as_ref().unwrap().kpd), true)
 
-                e.field("Frags:", player_stats.as_ref().unwrap().frags, true);
-                e.field("Deaths:", player_stats.as_ref().unwrap().deaths, true);
-                e.field("KpD:", player_stats.as_ref().unwrap().kpd, true);
+            .field("Accuracy:", format!("{}", player_stats.as_ref().unwrap().acc), true)
+            .field("Flags:", format!("{}", player_stats.as_ref().unwrap().flags), true)
+            .footer(server_footer);
 
-                e.field("Accuracy:", player_stats.as_ref().unwrap().acc, true);
-                e.field("Flags:", player_stats.as_ref().unwrap().flags, true);
-                e.footer(|f| f.text(format!("/connect {host} {port}")))
-            })
-        })
-        .await?;
+            ctx.send(poise::CreateReply::default().embed(server_embed)).await?;
     }
 
     Ok(())

@@ -2,6 +2,7 @@ use crate::{Context, Error};
 use crate::data::{TEAMMODES, ServerBookmark};
 use crate::admin::info_role;
 use crate::server::get_server_info;
+use poise::serenity_prelude as serenity;
 
 /// Grab server information from a bookmark
 #[poise::command(
@@ -15,7 +16,7 @@ pub async fn bk(
     #[description = "Name of the server bookmark"] bookmark: String
 ) -> Result<(), Error> {
     ctx.defer().await?;
-    let guild_id = *ctx.guild_id().unwrap().as_u64() as i64;
+    let guild_id = ctx.guild_id().unwrap().get();
 
     // Verify then grab information in DB
     let count = sqlx::query!("SELECT COUNT(bookmark_name) AS count FROM server_bookmarks WHERE guild_id = ? AND bookmark_name = ?", guild_id, bookmark)
@@ -54,7 +55,55 @@ pub async fn bk(
         }
     );
 
-    ctx.send(|m| {
+    // Create server embed
+    let server_footer = serenity::CreateEmbedFooter::new(format!("/connect {} {}", bookmark_info.host, bookmark_info.port));
+
+    let mut server_embed = serenity::CreateEmbed::new()
+        .colour(0xFF0000)
+        .title(server_data.description)
+        .url(page_url)
+        .description(embed_desc)
+        .footer(server_footer);
+
+    if TEAMMODES.contains(&server_data.gameMode.as_str()) {
+        for team in &server_data.teams {
+            let mut team_players_display = String::new();
+            for player in team.players.clone().unwrap() {
+                team_players_display = format!("{}{}\n", team_players_display, player);
+            }
+
+            server_embed = server_embed.field(
+                format!("{}: [{}]", team.name, team.score),
+                team_players_display,
+                true,
+            );
+        }
+    } else {
+        let mut players_display = String::new();
+        for player in &server_data.all_active_players.unwrap() {
+            players_display = format!("{}{}\n", players_display, player);
+        }
+
+        server_embed = server_embed.field("Players:", players_display, false);
+    }
+
+    if !server_data.spectators.clone().unwrap().is_empty() {
+        let mut spec_display = String::new();
+        for (i, player) in server_data.spectators.clone().unwrap().iter().enumerate() {
+            if i == server_data.spectators.clone().unwrap().len() - 1 {
+                spec_display = format!("{}{}", spec_display, player);
+            } else {
+                spec_display = format!("{}{}, ", spec_display, player);
+            }
+        }
+
+        server_embed = server_embed.field("Spectators:", spec_display, false);
+    }
+
+    ctx.send(poise::CreateReply::default().embed(server_embed)).await?;
+    Ok(())
+
+    /*ctx.send(|m| {
         m.embed(|e| {
             e.colour(0xFF0000);
             e.title(server_data.description);
@@ -99,9 +148,7 @@ pub async fn bk(
             e.footer(|f| f.text(format!("/connect {} {}", bookmark_info.host, bookmark_info.port)))
         })
     })
-    .await?;
-
-    Ok(())
+    .await?;*/
 }
 
 /// Create a server bookmark
@@ -116,7 +163,7 @@ pub async fn bkadd(
     #[description = "Server address/ip"] host: String,
     #[description = "Server port (Default: 28785)"] port: Option<u32>
 ) -> Result<(), Error> {
-    let guild_id = *ctx.guild_id().unwrap().as_u64();
+    let guild_id = ctx.guild_id().unwrap().get();
 
     let port = match port {
         Some(port) => port,
@@ -164,7 +211,7 @@ pub async fn bkdelete(
     ctx: Context<'_>,
     #[description = "Name of the server bookmark"] bookmark: String
 ) -> Result<(), Error> {
-    let guild_id = *ctx.guild_id().unwrap().as_u64();
+    let guild_id = ctx.guild_id().unwrap().get();
 
     // Verify in DB
     let count = sqlx::query!("SELECT COUNT(bookmark_name) AS count FROM server_bookmarks WHERE guild_id = ? AND bookmark_name = ?", guild_id, bookmark)
@@ -195,7 +242,7 @@ pub async fn bkdelete(
     guild_only
 )]
 pub async fn bklist(ctx: Context<'_>) -> Result<(), Error> {
-    let guild_id = *ctx.guild_id().unwrap().as_u64();
+    let guild_id = ctx.guild_id().unwrap().get();
 
     // Query DB and verify
     let server_bookmarks: Vec<ServerBookmark> = sqlx::query_as!(ServerBookmark, "SELECT * FROM server_bookmarks WHERE guild_id = ?", guild_id)

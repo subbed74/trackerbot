@@ -1,6 +1,7 @@
 use crate::{Context, Error};
 use crate::data::grab_api_data;
 use crate::admin::info_role;
+use poise::serenity_prelude as serenity;
 
 /// Display basic information about a clan
 #[poise::command(
@@ -87,14 +88,14 @@ pub async fn claninfo(
         most_recent_cw
     );
 
+    // Build embed
+    let clan_embed = serenity::CreateEmbed::new()
+        .title(title)
+        .url(page_url)
+        .description(desc);
+
     // Display information
-    ctx.send(|m| {
-        m.embed(|e| {
-            e.title(title);
-            e.url(page_url);
-            e.description(desc)
-        })
-    }).await?;
+    ctx.send(poise::CreateReply::default().embed(clan_embed)).await?;
 
     Ok(())
 }

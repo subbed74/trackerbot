@@ -1,6 +1,7 @@
 use crate::{Context, Error};
 use crate::data::{escape_markdown, grab_api_data, paginate};
 use crate::admin::info_role;
+use poise::serenity_prelude as serenity;
 
 /// Shows a list of similar player names up to 200 names.
 #[poise::command(
@@ -145,21 +146,20 @@ pub async fn player(
         data["player"]["efficstats"][5].as_f64().unwrap().trunc() as i64
     );
 
-    ctx.send(|m| {
-        m.embed(|e| {
-            e.colour(0xFF0000);
-            e.title(format!("{} stats", escape_markdown(username.clone())));
-            e.url(page_url);
-            e.description(desc);
+    // Build embed and send
+    let player_embed = serenity::CreateEmbed::new()
+        .colour(0xFF0000)
+        .title(format!("{} stats", escape_markdown(username.clone())))
+        .url(page_url)
+        .description(desc)
 
-            e.field("Duels:", duel_stats, false);
+        .field("Duels:", duel_stats, false)
 
-            e.field("Total:", total_stats, true);
-            e.field("Insta:", insta_stats, true);
-            e.field("Effic:", effic_stats, true)
-        })
-    })
-    .await?;
+        .field("Total:", total_stats, true)
+        .field("Insta:", insta_stats, true)
+        .field("Effic:", effic_stats, true);
+
+    ctx.send(poise::CreateReply::default().embed(player_embed)).await?;
 
     Ok(())
 }

@@ -21,16 +21,17 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 
 async fn listener(
     _ctx: &serenity::Context,
-    event: &poise::Event<'_>,
+    event: &serenity::FullEvent,
+    _framework: poise::FrameworkContext<'_, Data, Error>,
     data: &Data,
 ) -> Result<(), Error> {
     match event {
         // On bot start
-        poise::Event::Ready { .. } => {
+        serenity::FullEvent::Ready { .. } => {
             println!("SauerTracker Bot connected!");
         },
-        poise::Event::GuildCreate { guild, .. } => {
-            let guild_id = *guild.id.as_u64();
+        serenity::FullEvent::GuildCreate { guild, .. } => {
+            let guild_id = guild.id.get();
             let count = sqlx::query!("SELECT COUNT(id) AS count FROM guild_settings WHERE guild_id = ?", guild_id)
                 .fetch_one(&data.database)
                 .await
@@ -74,6 +75,15 @@ async fn main() {
         .unwrap();
 
     let framework = poise::Framework::builder()
+        .setup(move |ctx, _ready, framework| {
+            Box::pin(async move {
+                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                Ok(Data {
+                    database: database,
+                    client,
+                })
+            })
+        })
         .options(poise::FrameworkOptions {
             commands: vec![
                 admin::setrole(),
@@ -91,22 +101,16 @@ async fn main() {
                 bookmark::bkdelete(),
                 bookmark::bklist()
             ],
-            event_handler: |ctx, event, _, data| Box::pin(listener(ctx, event, data)),
+            event_handler: |ctx, event, framework, data| Box::pin(listener(ctx, event, framework, data)),
             ..Default::default()
         })
-        .token(std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN"))
-        .intents(
-            serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::GUILD_MESSAGES,
-        )
-        .setup(|ctx, _ready, framework| {
-            Box::pin(async move {
-                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(Data {
-                    database: database,
-                    client,
-                })
-            })
-        });
+        .build();
 
-    framework.run().await.unwrap();
+    let token = std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
+    let intents = serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::GUILD_MESSAGES;
+    
+    let trackerbot_client = serenity::ClientBuilder::new(token, intents)
+        .framework(framework)
+        .await;
+    trackerbot_client.unwrap().start().await.unwrap();
 }
