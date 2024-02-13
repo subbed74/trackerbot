@@ -1,10 +1,12 @@
-//use poise::serenity_prelude as serenity;
 use crate::{Context, Error};
 use crate::data::{grab_api_data, resolve_ip, ServerPlayer, DetailedServer, BasicServer, TEAMMODES};
 use crate::admin::info_role;
 use serde_json::Value;
 use poise::serenity_prelude as serenity;
 
+//--------------------
+// Commands
+//--------------------
 /// Grab active servers.
 #[poise::command(
     slash_command,
@@ -88,109 +90,18 @@ pub async fn server(
         Err(e) => return Err(e)
     };
 
-    // Format server info
-    let mut embed_desc = format!(
-        "**Players:** {}/{}\n**Mastermode:** {}\n*{} {} {}*\n\n",
-        server_data.clients,
-        server_data.maxClients,
-        server_data.masterMode,
-        server_data.mapName,
-        server_data.gameMode,
-        if server_data.gameMode != "coop_edit" {
-            format!("- {}", server_data.timeLeftString)
-        } else {
-            String::new()
-        }
-    );
-
-    // If username not specified, show full server otherwise user stats
-    if username.is_none() {
-        let server_footer = serenity::CreateEmbedFooter::new(format!("/connect {host} {port}"));
-
-        let mut server_embed = serenity::CreateEmbed::new()
-            .colour(0xFF0000)
-            .title(server_data.description)
-            .url(page_url)
-            .description(embed_desc)
-            .footer(server_footer);
-
-        if TEAMMODES.contains(&server_data.gameMode.as_str()) {
-            for team in &server_data.teams {
-                let mut team_players_display = String::new();
-                for player in team.players.clone().unwrap() {
-                    team_players_display = format!("{}{}\n", team_players_display, player);
-                }
-
-                server_embed = server_embed.field(
-                    format!("{}: [{}]", team.name, team.score),
-                    team_players_display,
-                    true,
-                );
-            }
-        } else {
-            let mut players_display = String::new();
-            for player in &server_data.all_active_players.unwrap() {
-                players_display = format!("{}{}\n", players_display, player);
-            }
-
-            server_embed = server_embed.field("Players:", players_display, false);
-        }
-
-        if !server_data.spectators.clone().unwrap().is_empty() {
-            let mut spec_display = String::new();
-            for (i, player) in server_data.spectators.clone().unwrap().iter().enumerate() {
-                if i == server_data.spectators.clone().unwrap().len() - 1 {
-                    spec_display = format!("{}{}", spec_display, player);
-                } else {
-                    spec_display = format!("{}{}, ", spec_display, player);
-                }
-            }
-
-            server_embed = server_embed.field("Spectators:", spec_display, false);
-        }
-
-        ctx.send(poise::CreateReply::default().embed(server_embed)).await?;
-    } else {
-        // Check if player is in server
-        let mut player_stats: Option<ServerPlayer> = None;
-        for player in server_data.players {
-            if player.name == username.clone().unwrap() {
-                player_stats = Some(player);
-                break;
-            }
-        }
-
-        if player_stats.is_none() {
-            return Err(format!("{}, that player was not found in the server!", ctx.author()).into());
-        }
-
-        // Build and send embed if found
-        embed_desc = format!("{embed_desc}__**Player:**__\n{}",
-            player_stats.as_ref().unwrap().name
-        );
-
-        let server_footer = serenity::CreateEmbedFooter::new(format!("/connect {host} {port}"));
-
-        let server_embed = serenity::CreateEmbed::new()
-            .colour(0xFF0000)
-            .title(server_data.description)
-            .url(page_url)
-            .description(embed_desc)
-
-            .field("Frags:", format!("{}", player_stats.as_ref().unwrap().frags), true)
-            .field("Deaths:", format!("{}", player_stats.as_ref().unwrap().deaths), true)
-            .field("KpD:", format!("{}", player_stats.as_ref().unwrap().kpd), true)
-
-            .field("Accuracy:", format!("{}", player_stats.as_ref().unwrap().acc), true)
-            .field("Flags:", format!("{}", player_stats.as_ref().unwrap().flags), true)
-            .footer(server_footer);
-
-            ctx.send(poise::CreateReply::default().embed(server_embed)).await?;
-    }
+    let server_embed = match build_server_embed(server_data, username, page_url) {
+        Ok(embed) => embed,
+        Err(e) => return Err(e)
+    };
+    ctx.send(poise::CreateReply::default().embed(server_embed)).await?;
 
     Ok(())
 }
 
+//--------------------
+// Functions
+//--------------------
 // Get server info container
 pub async fn get_server_info(client: &reqwest::Client, host: String, port: u32) -> Result<DetailedServer, Error> {
     // Validate host
@@ -262,4 +173,103 @@ pub fn server_exists(server_array: &Vec<Value>, host: &String, port: u32) -> boo
     }
 
     false
+}
+
+// Build server embed or player stats embed
+pub fn build_server_embed(server_data: DetailedServer, username: Option<String>, page_url: String) -> Result<serenity::CreateEmbed, Error> {
+    let mut server_embed = serenity::CreateEmbed::new()
+        .footer(serenity::CreateEmbedFooter::new(format!("/connect {} {}", server_data.host, server_data.port)));
+
+    let mut embed_desc = format!(
+        "**Players:** {}/{}\n**Mastermode:** {}\n*{} {} {}*\n\n",
+        server_data.clients,
+        server_data.maxClients,
+        server_data.masterMode,
+        server_data.mapName,
+        server_data.gameMode,
+        if server_data.gameMode != "coop_edit" {
+            format!("- {}", server_data.timeLeftString)
+        } else {
+            String::new()
+        }
+    );
+
+    // If username not specified, show full server otherwise user stats
+    if username.is_none() {
+        // Basic embed info
+        server_embed = server_embed
+            .colour(0xFF0000)
+            .title(server_data.description)
+            .url(page_url)
+            .description(embed_desc);
+
+        // Format teams and players
+        if TEAMMODES.contains(&server_data.gameMode.as_str()) {
+            for team in &server_data.teams {
+                let mut team_players_display = String::new();
+                for player in team.players.clone().unwrap() {
+                    team_players_display = format!("{}{}\n", team_players_display, player);
+                }
+
+                server_embed = server_embed.field(
+                    format!("{}: [{}]", team.name, team.score),
+                    team_players_display,
+                    true,
+                );
+            }
+        } else {
+            let mut players_display = String::new();
+            for player in &server_data.all_active_players.unwrap() {
+                players_display = format!("{}{}\n", players_display, player);
+            }
+
+            server_embed = server_embed.field("Players:", players_display, false);
+        }
+
+        if !server_data.spectators.clone().unwrap().is_empty() {
+            let mut spec_display = String::new();
+            for (i, player) in server_data.spectators.clone().unwrap().iter().enumerate() {
+                if i == server_data.spectators.clone().unwrap().len() - 1 {
+                    spec_display = format!("{}{}", spec_display, player);
+                } else {
+                    spec_display = format!("{}{}, ", spec_display, player);
+                }
+            }
+
+            server_embed = server_embed.field("Spectators:", spec_display, false);
+        }
+    } else {
+        // Check if player is in server
+        let mut player_stats: Option<ServerPlayer> = None;
+        for player in server_data.players {
+            if player.name == username.clone().unwrap() {
+                player_stats = Some(player);
+                break;
+            }
+        }
+
+        if player_stats.is_none() {
+            return Err(format!("Player \"{}\" was not found in the server!", username.unwrap()).into());
+        }
+
+        // Build and send embed if found
+        embed_desc = format!("{embed_desc}__**Player:**__\n{}",
+            player_stats.as_ref().unwrap().name
+        );
+
+        server_embed = server_embed
+            .colour(0xFF0000)
+            .title(server_data.description)
+            .url(page_url)
+            .description(embed_desc)
+
+            .field("Frags:", format!("{}", player_stats.as_ref().unwrap().frags), true)
+            .field("Deaths:", format!("{}", player_stats.as_ref().unwrap().deaths), true)
+            .field("KpD:", format!("{}", player_stats.as_ref().unwrap().kpd), true)
+
+            .field("Accuracy:", format!("{}", player_stats.as_ref().unwrap().acc), true)
+            .field("Flags:", format!("{}", player_stats.as_ref().unwrap().flags), true);
+    }
+
+    Ok(server_embed)
 }

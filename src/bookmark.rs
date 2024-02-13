@@ -1,8 +1,7 @@
 use crate::{Context, Error};
-use crate::data::{TEAMMODES, ServerBookmark};
+use crate::data::ServerBookmark;
 use crate::admin::info_role;
-use crate::server::get_server_info;
-use poise::serenity_prelude as serenity;
+use crate::server::{get_server_info, build_server_embed};
 
 /// Grab server information from a bookmark
 #[poise::command(
@@ -13,7 +12,9 @@ use poise::serenity_prelude as serenity;
 )]
 pub async fn bk(
     ctx: Context<'_>,
-    #[description = "Name of the server bookmark"] bookmark: String
+    #[description = "Name of the server bookmark"] bookmark: String,
+    #[description = "Player in game"]
+    #[max_length = 15] username: Option<String>,
 ) -> Result<(), Error> {
     ctx.defer().await?;
     let guild_id = ctx.guild_id().unwrap().get();
@@ -40,115 +41,13 @@ pub async fn bk(
         Err(e) => return Err(e)
     };
 
-    // Format server info
-    let embed_desc = format!(
-        "**Players:** {}/{}\n**Mastermode:** {}\n*{} {} {}*\n\n",
-        server_data.clients,
-        server_data.maxClients,
-        server_data.masterMode,
-        server_data.mapName,
-        server_data.gameMode,
-        if server_data.gameMode != "coop_edit" {
-            format!("- {}", server_data.timeLeftString)
-        } else {
-            String::new()
-        }
-    );
-
-    // Create server embed
-    let server_footer = serenity::CreateEmbedFooter::new(format!("/connect {} {}", bookmark_info.host, bookmark_info.port));
-
-    let mut server_embed = serenity::CreateEmbed::new()
-        .colour(0xFF0000)
-        .title(server_data.description)
-        .url(page_url)
-        .description(embed_desc)
-        .footer(server_footer);
-
-    if TEAMMODES.contains(&server_data.gameMode.as_str()) {
-        for team in &server_data.teams {
-            let mut team_players_display = String::new();
-            for player in team.players.clone().unwrap() {
-                team_players_display = format!("{}{}\n", team_players_display, player);
-            }
-
-            server_embed = server_embed.field(
-                format!("{}: [{}]", team.name, team.score),
-                team_players_display,
-                true,
-            );
-        }
-    } else {
-        let mut players_display = String::new();
-        for player in &server_data.all_active_players.unwrap() {
-            players_display = format!("{}{}\n", players_display, player);
-        }
-
-        server_embed = server_embed.field("Players:", players_display, false);
-    }
-
-    if !server_data.spectators.clone().unwrap().is_empty() {
-        let mut spec_display = String::new();
-        for (i, player) in server_data.spectators.clone().unwrap().iter().enumerate() {
-            if i == server_data.spectators.clone().unwrap().len() - 1 {
-                spec_display = format!("{}{}", spec_display, player);
-            } else {
-                spec_display = format!("{}{}, ", spec_display, player);
-            }
-        }
-
-        server_embed = server_embed.field("Spectators:", spec_display, false);
-    }
-
+    let server_embed = match build_server_embed(server_data, username, page_url) {
+        Ok(embed) => embed,
+        Err(e) => return Err(e)
+    };
     ctx.send(poise::CreateReply::default().embed(server_embed)).await?;
+
     Ok(())
-
-    /*ctx.send(|m| {
-        m.embed(|e| {
-            e.colour(0xFF0000);
-            e.title(server_data.description);
-            e.url(page_url);
-            e.description(embed_desc);
-
-            if TEAMMODES.contains(&server_data.gameMode.as_str()) {
-                for team in &server_data.teams {
-                    let mut team_players_display = String::new();
-                    for player in team.players.clone().unwrap() {
-                        team_players_display = format!("{}{}\n", team_players_display, player);
-                    }
-
-                    e.field(
-                        format!("{}: [{}]", team.name, team.score),
-                        team_players_display,
-                        true,
-                    );
-                }
-            } else {
-                let mut players_display = String::new();
-                for player in &server_data.all_active_players.unwrap() {
-                    players_display = format!("{}{}\n", players_display, player);
-                }
-
-                e.field("Players:", players_display, false);
-            }
-
-            if !server_data.spectators.clone().unwrap().is_empty() {
-                let mut spec_display = String::new();
-                for (i, player) in server_data.spectators.clone().unwrap().iter().enumerate() {
-                    if i == server_data.spectators.clone().unwrap().len() - 1 {
-                        spec_display = format!("{}{}", spec_display, player);
-                    } else {
-                        spec_display = format!("{}{}, ", spec_display, player);
-                    }
-                }
-
-                e.field("Spectators:", spec_display, false);
-            }
-
-            e.footer(|f| f.text(format!("/connect {} {}", bookmark_info.host, bookmark_info.port)))
-        })
-    })
-    .await?;*/
 }
 
 /// Create a server bookmark
