@@ -8,6 +8,7 @@ use serde::{Serialize, Deserialize};
 use crate::Error;
 
 // Data structures
+#[allow(dead_code)]
 pub const MODENAMES: [&str; 23] = [
     "ffa",
     "coop_edit",
